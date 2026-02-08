@@ -5,15 +5,20 @@ import (
 	"fmt"
 
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/models"
+	"github.com/vladopadikk/order-delivery-app/orders-service/internal/producer"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/repository"
 )
 
 type Service struct {
-	repo *repository.Repository
+	repo     *repository.Repository
+	producer *producer.Producer
 }
 
-func NewService(repo *repository.Repository) *Service {
-	return &Service{repo}
+func NewService(repo *repository.Repository, producer *producer.Producer) *Service {
+	return &Service{
+		repo:     repo,
+		producer: producer,
+	}
 }
 
 func (s *Service) CreateOrder(ctx context.Context, userID int64, orderIn models.OrderInput) (models.OrderResponse, error) {
@@ -49,7 +54,16 @@ func (s *Service) CreateOrder(ctx context.Context, userID int64, orderIn models.
 		return models.OrderResponse{}, fmt.Errorf("commit tx: %w", err)
 	}
 
-	//Тут Kafka
+	event := producer.OrderCreatedEvent{
+		OrderID:    order.ID,
+		UserID:     userID,
+		TotalPrice: order.TotalPrice,
+		Status:     order.Status,
+	}
+
+	if err := s.producer.PublishOrderCreated(ctx, event); err != nil {
+		return models.OrderResponse{}, err
+	}
 
 	return models.OrderResponse{
 		OrderID:    order.ID,
