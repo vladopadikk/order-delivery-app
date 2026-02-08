@@ -1,8 +1,9 @@
 package models
 
 type OrderItemInput struct {
-	ProductID int64  `json:"item_id"`
-	Quantity  uint32 `json:"quantity"`
+	ProductID int64   `json:"item_id"`
+	Quantity  uint32  `json:"quantity"`
+	Price     float64 `json:"price"`
 }
 
 type OrderInput struct {
@@ -11,6 +12,7 @@ type OrderInput struct {
 }
 
 type OrderResponse struct {
-	OrderID int64  `json:"order_id"`
-	Status  string `json:"status"`
+	OrderID    int64   `json:"order_id"`
+	TotalPrice float64 `json:"total_price"`
+	Status     string  `json:"status"`
 }

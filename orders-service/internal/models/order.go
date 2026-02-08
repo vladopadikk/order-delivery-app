@@ -3,7 +3,6 @@ package models
 import "time"
 
 const (
-	StatusNew                = "NEW"
 	StatusPaymentPending     = "PAYMENT_PENDING"
 	StatusPaid               = "PAID"
 	StatusDeliveryInProgress = "DELIVERY_IN_PROGRESS"
