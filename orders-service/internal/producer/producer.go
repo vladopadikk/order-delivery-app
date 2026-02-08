@@ -29,8 +29,8 @@ func NewProducer(broker string) *Producer {
 	return &Producer{writer}
 }
 
-func (p *Producer) Close() {
-	p.writer.Close()
+func (p *Producer) Close() error {
+	return p.writer.Close()
 }
 
 func (p *Producer) PublishOrderCreated(ctx context.Context, event OrderCreatedEvent) error {

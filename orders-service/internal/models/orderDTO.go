@@ -16,3 +16,8 @@ type OrderResponse struct {
 	TotalPrice float64 `json:"total_price"`
 	Status     string  `json:"status"`
 }
+
+type OrderListResponse struct {
+	UserID int64           `json:"user_id"`
+	Orders []OrderResponse `json:"orders"`
+}

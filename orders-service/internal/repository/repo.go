@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/vladopadikk/order-delivery-app/orders-service/database"
+	"github.com/vladopadikk/order-delivery-app/orders-service/internal/database"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/models"
 )
 
