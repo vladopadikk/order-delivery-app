@@ -72,6 +72,18 @@ func (s *Service) CreateOrder(ctx context.Context, userID int64, orderIn models.
 	}, err
 }
 
+func (s *Service) GetOrderList(ctx context.Context, userID int64) (models.OrderListResponse, error) {
+	orders, err := s.repo.GetOrders(ctx, userID)
+	if err != nil {
+		return models.OrderListResponse{}, err
+	}
+
+	return models.OrderListResponse{
+		UserID: userID,
+		Orders: orders,
+	}, nil
+}
+
 func CalculateTotalPrice(orderItems []models.OrderItemInput) float64 {
 	var totalPrice float64
 

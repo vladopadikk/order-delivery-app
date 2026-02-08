@@ -44,6 +44,28 @@ func (h *Handler) CreateOrderHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, order)
 }
 
+func (h *Handler) GetOrderListHandler(ctx *gin.Context) {
+	userIDAny, exist := ctx.Get("userID")
+	if !exist {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user unauthorized"})
+		return
+	}
+	userID, ok := userIDAny.(int64)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	orders, err := h.service.GetOrderList(ctx, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, orders)
+}
+
 func RegisterRouter(router *gin.RouterGroup, handler *Handler) {
 	router.POST("/orders", handler.CreateOrderHandler)
+	router.GET("/orders", handler.GetOrderListHandler)
 }
