@@ -32,6 +32,11 @@ func NewProducer(broker string) *Producer {
 	}
 }
 
+func (p *Producer) Close() {
+	p.successWriter.Close()
+	p.failedWriter.Close()
+}
+
 func (p *Producer) PublishPaymentSuccess(ctx context.Context, event models.PaymentSuccessEvent) error {
 	payload, err := json.Marshal(event)
 	if err != nil {

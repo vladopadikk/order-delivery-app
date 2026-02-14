@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"math/rand"
 
@@ -9,6 +11,8 @@ import (
 	"github.com/vladopadikk/order-delivery-app/payments-service/internal/models"
 	"github.com/vladopadikk/order-delivery-app/payments-service/internal/repository"
 )
+
+var ErrPaymentNotFound = errors.New("payment not found")
 
 type Service struct {
 	repo     *repository.Repository
@@ -63,4 +67,19 @@ func (s *Service) ProcessPayment(ctx context.Context, event models.OrderCreatedE
 	}
 
 	return nil
+}
+
+func (s *Service) GetOrderStatus(ctx context.Context, userID, orderID int64) (models.PaymentResponse, error) {
+	payment, err := s.repo.GetStatus(ctx, userID, orderID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.PaymentResponse{}, ErrPaymentNotFound
+		}
+		return models.PaymentResponse{}, fmt.Errorf("db error: %w", err)
+	}
+
+	return models.PaymentResponse{
+		OrderID: payment.OrderID,
+		Status:  payment.Status,
+	}, nil
 }
