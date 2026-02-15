@@ -11,7 +11,7 @@ import (
 )
 
 type Producer struct {
-	Writer *kafka.Writer
+	writer *kafka.Writer
 }
 
 func NewProducer(broker string) *Producer {
@@ -23,13 +23,17 @@ func NewProducer(broker string) *Producer {
 	return &Producer{writer}
 }
 
+func (p *Producer) Close() error {
+	return p.writer.Close()
+}
+
 func (p *Producer) PublishDeliveryEvent(ctx context.Context, event models.DeliveryEvent) error {
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("marshal event: %w", err)
 	}
 
-	err = p.Writer.WriteMessages(ctx,
+	err = p.writer.WriteMessages(ctx,
 		kafka.Message{
 			Key:   []byte(strconv.FormatInt(event.OrderID, 10)),
 			Value: payload,
