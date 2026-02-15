@@ -45,7 +45,7 @@ func (r *Repository) Create(ctx context.Context, orderID, userID int64, address 
 func (r *Repository) UpdateStatus(ctx context.Context, orderID int64, status string) error {
 	query := `
 		UPDATE deliveries 
-		SET status = $1
+		SET status = $1, completed_at = NOW()
 		WHERE order_id = $2
 	`
 	_, err := r.DB.ExecContext(ctx, query, status, orderID)

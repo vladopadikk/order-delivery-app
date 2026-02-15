@@ -46,9 +46,11 @@ func (c *Consumer) Run(ctx context.Context) {
 				continue
 			}
 
-			if err := c.service.StartDelivery(ctx, event); err != nil {
-				log.Println("process error:", err)
-			}
+			go func(e models.PaymentEvent) {
+				if err := c.service.StartDelivery(ctx, e); err != nil {
+					log.Println("process error:", err)
+				}
+			}(event)
 
 		}
 	}

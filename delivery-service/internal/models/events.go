@@ -1,7 +1,6 @@
 package models
 
 const (
-	StatusPending    = "DELIVERY_PENDING"
 	StatusInProgress = "DELIVERY_IN_PROGRESS"
 	StatusDelivered  = "DELIVERED"
 )
