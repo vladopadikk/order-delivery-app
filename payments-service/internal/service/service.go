@@ -33,9 +33,11 @@ func (s *Service) ProcessPayment(ctx context.Context, event models.OrderCreatedE
 		payment, err := s.repo.Create(ctx, event.OrderID, event.UserID, event.TotalPrice, models.StatusPaymentSuccess)
 		if err != nil {
 			failEvent := models.PaymentFailedEvent{
-				OrderID: event.OrderID,
-				Status:  models.StatusPaymentFailed,
-				Reason:  "internal server error: " + err.Error(),
+				OrderID:    event.OrderID,
+				UserID:     event.UserID,
+				TotalPrice: event.TotalPrice,
+				Status:     models.StatusPaymentFailed,
+				Reason:     "internal server error: " + err.Error(),
 			}
 
 			if err := s.producer.PublishPaymentFailed(ctx, failEvent); err != nil {
@@ -46,8 +48,10 @@ func (s *Service) ProcessPayment(ctx context.Context, event models.OrderCreatedE
 		}
 
 		succEvent = models.PaymentSuccessEvent{
-			OrderID: payment.OrderID,
-			Status:  models.StatusPaymentSuccess,
+			OrderID:    payment.OrderID,
+			UserID:     event.UserID,
+			TotalPrice: event.TotalPrice,
+			Status:     models.StatusPaymentSuccess,
 		}
 
 		if err := s.producer.PublishPaymentSuccess(ctx, succEvent); err != nil {
@@ -56,9 +60,11 @@ func (s *Service) ProcessPayment(ctx context.Context, event models.OrderCreatedE
 
 	} else {
 		failEvent := models.PaymentFailedEvent{
-			OrderID: event.OrderID,
-			Status:  models.StatusPaymentFailed,
-			Reason:  "payment system error",
+			OrderID:    event.OrderID,
+			UserID:     event.UserID,
+			TotalPrice: event.TotalPrice,
+			Status:     models.StatusPaymentFailed,
+			Reason:     "payment system error",
 		}
 
 		if err := s.producer.PublishPaymentFailed(ctx, failEvent); err != nil {
