@@ -54,10 +54,11 @@ func (s *Service) CreateOrder(ctx context.Context, userID int64, orderIn models.
 		return models.OrderResponse{}, fmt.Errorf("commit tx: %w", err)
 	}
 
-	event := producer.OrderCreatedEvent{
+	event := models.OrderCreatedEvent{
 		OrderID:    order.ID,
 		UserID:     userID,
 		TotalPrice: order.TotalPrice,
+		Address:    order.DeliveryAddress,
 		Status:     order.Status,
 	}
 

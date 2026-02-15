@@ -7,14 +7,8 @@ import (
 	"strconv"
 
 	"github.com/segmentio/kafka-go"
+	"github.com/vladopadikk/order-delivery-app/orders-service/internal/models"
 )
-
-type OrderCreatedEvent struct {
-	OrderID    int64
-	UserID     int64
-	TotalPrice float64
-	Status     string
-}
 
 type Producer struct {
 	writer *kafka.Writer
@@ -33,7 +27,7 @@ func (p *Producer) Close() error {
 	return p.writer.Close()
 }
 
-func (p *Producer) PublishOrderCreated(ctx context.Context, event OrderCreatedEvent) error {
+func (p *Producer) PublishOrderCreated(ctx context.Context, event models.OrderCreatedEvent) error {
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("marshal event: %w", err)
