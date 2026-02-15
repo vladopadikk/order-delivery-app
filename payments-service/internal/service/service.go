@@ -51,6 +51,7 @@ func (s *Service) ProcessPayment(ctx context.Context, event models.OrderCreatedE
 			OrderID:    payment.OrderID,
 			UserID:     event.UserID,
 			TotalPrice: event.TotalPrice,
+			Address:    event.Address,
 			Status:     models.StatusPaymentSuccess,
 		}
 
