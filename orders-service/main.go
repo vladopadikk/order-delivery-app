@@ -5,8 +5,8 @@ import (
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/config"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/database"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/handlers"
+	"github.com/vladopadikk/order-delivery-app/orders-service/internal/kafka/producer"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/middleware"
-	"github.com/vladopadikk/order-delivery-app/orders-service/internal/producer"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/repository"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/service"
 )
