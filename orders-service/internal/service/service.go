@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/vladopadikk/order-delivery-app/orders-service/internal/kafka/producer"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/models"
-	"github.com/vladopadikk/order-delivery-app/orders-service/internal/producer"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/repository"
 )
 
@@ -71,6 +71,10 @@ func (s *Service) CreateOrder(ctx context.Context, userID int64, orderIn models.
 		TotalPrice: order.TotalPrice,
 		Status:     order.Status,
 	}, err
+}
+
+func (s *Service) UpdateOrderStatus(ctx context.Context, event models.PaymentSuccessEvent) error {
+	return s.repo.UpdateStatus(ctx, event.OrderID, models.StatusPaid)
 }
 
 func (s *Service) GetOrderList(ctx context.Context, userID int64) (models.OrderListResponse, error) {

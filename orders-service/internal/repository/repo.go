@@ -83,3 +83,14 @@ func (r *Repository) GetOrders(ctx context.Context, userID int64) ([]models.Orde
 
 	return orders, err
 }
+
+func (r *Repository) UpdateStatus(ctx context.Context, orderID int64, status string) error {
+	query := `
+		UPDATE orders 
+		SET status = $1
+		WHERE id = $2
+	`
+	_, err := r.DB.ExecContext(ctx, query, status, orderID)
+	return err
+
+}
