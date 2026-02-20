@@ -2,15 +2,6 @@ package models
 
 import "time"
 
-const (
-	StatusPaymentPending     = "PAYMENT_PENDING"
-	StatusPaid               = "PAID"
-	StatusDeliveryInProgress = "DELIVERY_IN_PROGRESS"
-	StatusDelivered          = "DELIVERED"
-	StatusFailed             = "FAILED"
-	StatusCancelled          = "CANCELLED"
-)
-
 type Order struct {
 	ID              int64
 	UserID          int64

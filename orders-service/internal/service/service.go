@@ -73,8 +73,8 @@ func (s *Service) CreateOrder(ctx context.Context, userID int64, orderIn models.
 	}, err
 }
 
-func (s *Service) UpdateOrderStatus(ctx context.Context, event models.PaymentSuccessEvent) error {
-	return s.repo.UpdateStatus(ctx, event.OrderID, models.StatusPaid)
+func (s *Service) UpdateOrderStatus(ctx context.Context, orderID int64, status string) error {
+	return s.repo.UpdateStatus(ctx, orderID, status)
 }
 
 func (s *Service) GetOrderList(ctx context.Context, userID int64) (models.OrderListResponse, error) {
