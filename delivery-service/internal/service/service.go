@@ -46,6 +46,7 @@ func (s *Service) StartDelivery(ctx context.Context, event models.PaymentEvent) 
 
 	delEvent := models.DeliveryEvent{
 		OrderID: delivery.OrderID,
+		UserID:  delivery.UserID,
 		Status:  models.StatusDelivered,
 	}
 
