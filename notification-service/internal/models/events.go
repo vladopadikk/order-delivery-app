@@ -1,23 +1,23 @@
 package models
 
 type PaymentSuccessEvent struct {
-	OrderID    int64
-	UserID     int64
-	TotalPrice float64
-	Address    string
-	Status     string
+	OrderID    int64   `json:"order_id"`
+	UserID     int64   `json:"user_id"`
+	TotalPrice float64 `json:"total_price"`
+	Address    string  `json:"address"`
+	Status     string  `json:"status"`
 }
 
 type PaymentFailedEvent struct {
-	OrderID    int64
-	UserID     int64
-	TotalPrice float64
-	Status     string
-	Reason     string
+	OrderID    int64   `json:"order_id"`
+	UserID     int64   `json:"user_id"`
+	TotalPrice float64 `json:"total_price"`
+	Status     string  `json:"status"`
+	Reason     string  `json:"reason"`
 }
 
 type DeliveryEvent struct {
-	OrderID int64
-	UserID  int64
-	Status  string
+	OrderID int64  `json:"order_id"`
+	UserID  int64  `json:"user_id"`
+	Status  string `json:"status"`
 }
