@@ -20,11 +20,76 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth-service
+    depends_on:
+      - auth-db
+    environment:
+      APP_PORT: 8081
+
+      DB_HOST: auth-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: auth_db
+      DB_SSLMODE: disable
+
+      JWT_SECRET: mysecret
+    ports:
+      - "8081:8081"
+
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+
+  delivery-service:
+    build:
+      context: ./delivery-service
+    container_name: delivery-service
+    depends_on:
+      - kafka
+      - delivery-db
+    environment:
+      APP_PORT: 8082
+      KAFKA_HOST: kafka
+      KAFKA_PORT: 9092
+
+      DB_HOST: delivery-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: delivery_db
+      DB_SSLMODE: disable
+
+      JWT_SECRET: mysecret
+    ports:
+      - "8082:8082"
+
+  delivery-db:
+    image: postgres:15-alpine
+    container_name: delivery-db
+    environment:
+      POSTGRES_DB: delivery_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - delivery_db_data:/var/lib/postgresql/data
 
   notification-service:
     build:
@@ -33,6 +98,10 @@ services:
     depends_on:
       - kafka
     environment:
-      APP_PORT: 8080
+      APP_PORT: 8083
       KAFKA_HOST: kafka
       KAFKA_PORT: 9092
+
+volumes:
+  auth_db_data:
+  delivery_db_data:

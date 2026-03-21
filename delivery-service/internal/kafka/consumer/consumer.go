@@ -27,6 +27,10 @@ func NewConsumer(broker string, service *service.Service) *Consumer {
 	}
 }
 
+func (c *Consumer) Close() {
+	c.reader.Close()
+}
+
 func (c *Consumer) Run(ctx context.Context) {
 	for {
 		select {
