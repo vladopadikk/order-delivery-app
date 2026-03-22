@@ -185,3 +185,4 @@ volumes:
   delivery_db_data:
   orders_db_data:
   payment_db_data:
+  kafka_data:
