@@ -21,17 +21,17 @@ func NewConsumer(broker string, service *service.Service) *Consumer {
 	paymentSuccReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{broker},
 		Topic:   "payment_success",
-		GroupID: "notification-service",
+		GroupID: "notification-service-payment-success",
 	})
 	paymentFailReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{broker},
 		Topic:   "payment_failed",
-		GroupID: "notification-service",
+		GroupID: "notification-service-payment-failed",
 	})
 	deliveryReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{broker},
 		Topic:   "delivery_completed",
-		GroupID: "notification-service",
+		GroupID: "notification-service-delivery-completed",
 	})
 
 	return &Consumer{

@@ -14,7 +14,7 @@ CREATE TABLE order_items (
     order_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     quantity SMALLINT NOT NULL ,
-    price DECIMAL(10,2)
+    price DECIMAL(10,2),
 
     CONSTRAINT fk_order
         FOREIGN KEY (order_id)
