@@ -82,12 +82,12 @@
 
 Пример event-driven цепочки:
 
-`orders-service` → `order_created` → `payment-service`  
-`payment-service` → `payment_success` → `delivery-service`  
-`payment-service` → `payment_success` / `payment_failed` → `orders-service` 
-`payment-service` → `payment_success` / `payment_failed` → `notification-service`
-`delivery-service` → `delivery_completed` → `orders-service`
-`delivery-service` → `delivery_completed` → `notification-service`
+-`orders-service` → `order_created` → `payment-service`  
+-`payment-service` → `payment_success` → `delivery-service`  
+-`payment-service` → `payment_success` / `payment_failed` → `orders-service`
+-`payment-service` → `payment_success` / `payment_failed` → `notification-service`
+-`delivery-service` → `delivery_completed` → `orders-service`
+-`delivery-service` → `delivery_completed` → `notification-service`
 
 ---
 
