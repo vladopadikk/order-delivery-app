@@ -61,11 +61,10 @@ func (s *Service) Register(ctx context.Context, input models.UserInput) (models.
 func (s *Service) Login(ctx context.Context, loginIn models.LoginInput) (models.TokenResponse, error) {
 	u, err := s.repo.GetByEmail(ctx, loginIn.Email)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.TokenResponse{}, ErrUserNotFound
+		}
 		return models.TokenResponse{}, fmt.Errorf("db error: %w", err)
-	}
-
-	if u == nil {
-		return models.TokenResponse{}, ErrUserNotFound
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(loginIn.Password))
