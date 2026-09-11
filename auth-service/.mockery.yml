@@ -25,3 +25,6 @@ packages:
   github.com/vladopadikk/order-delivery-app/auth-service/internal/handlers:
     interfaces:
       AuthService:
+  github.com/vladopadikk/order-delivery-app/auth-service/internal/service:
+    interfaces:
+      UserRepository:

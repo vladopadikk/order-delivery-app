@@ -18,7 +18,7 @@ import (
 func TestRegisterHandler(t *testing.T) {
 	type mockBehavior func(m *mocks.MockAuthService, userIn models.UserInput)
 
-	tests := []struct {
+	testCases := []struct {
 		name                 string
 		inputBody            string
 		inputUser            models.UserInput
@@ -88,12 +88,12 @@ func TestRegisterHandler(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tC := range testCases {
+		t.Run(tC.name, func(t *testing.T) {
 			svc := mocks.NewMockAuthService(t)
 			handler := NewHandler(svc)
 
-			test.mockBehavior(svc, test.inputUser)
+			tC.mockBehavior(svc, tC.inputUser)
 
 			gin.SetMode(gin.TestMode)
 			r := gin.New()
@@ -103,13 +103,13 @@ func TestRegisterHandler(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/api/register",
-				bytes.NewBufferString(test.inputBody))
+				bytes.NewBufferString(tC.inputBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			r.ServeHTTP(w, req)
 
-			assert.Equal(t, test.expectedStatusCode, w.Code)
-			assert.Equal(t, test.expectedResponseBody, w.Body.String())
+			assert.Equal(t, tC.expectedStatusCode, w.Code)
+			assert.Equal(t, tC.expectedResponseBody, w.Body.String())
 		})
 	}
 }
@@ -117,7 +117,7 @@ func TestRegisterHandler(t *testing.T) {
 func TestLoginHandler(t *testing.T) {
 	type mockBehavior func(m *mocks.MockAuthService, loginIn models.LoginInput)
 
-	tests := []struct {
+	testCases := []struct {
 		name                 string
 		inputBody            string
 		loginInput           models.LoginInput
@@ -198,12 +198,12 @@ func TestLoginHandler(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tC := range testCases {
+		t.Run(tC.name, func(t *testing.T) {
 			svc := mocks.NewMockAuthService(t)
 			handler := NewHandler(svc)
 
-			test.mockBehavior(svc, test.loginInput)
+			tC.mockBehavior(svc, tC.loginInput)
 
 			gin.SetMode(gin.TestMode)
 			r := gin.New()
@@ -213,14 +213,14 @@ func TestLoginHandler(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/api/login",
-				bytes.NewBufferString(test.inputBody),
+				bytes.NewBufferString(tC.inputBody),
 			)
 			req.Header.Set("Content-Type", "application/json")
 
 			r.ServeHTTP(w, req)
 
-			assert.Equal(t, test.expectedStatusCode, w.Code)
-			assert.Equal(t, test.expectedResponseBody, w.Body.String())
+			assert.Equal(t, tC.expectedStatusCode, w.Code)
+			assert.Equal(t, tC.expectedResponseBody, w.Body.String())
 		})
 	}
 }
