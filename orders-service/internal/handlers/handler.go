@@ -1,18 +1,24 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/models"
-	"github.com/vladopadikk/order-delivery-app/orders-service/internal/service"
 )
 
-type Handler struct {
-	service *service.Service
+type OrderService interface {
+	CreateOrder(ctx context.Context, userID int64, orderIn models.OrderInput) (models.OrderResponse, error)
+	GetOrderList(ctx context.Context, userID int64) (models.OrderListResponse, error)
+	UpdateOrderStatus(ctx context.Context, orderID int64, status string) error
 }
 
-func NewHandler(service *service.Service) *Handler {
+type Handler struct {
+	service OrderService
+}
+
+func NewHandler(service OrderService) *Handler {
 	return &Handler{service}
 }
 
