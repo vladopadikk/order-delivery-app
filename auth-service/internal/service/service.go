@@ -9,7 +9,6 @@ import (
 
 	"github.com/vladopadikk/order-delivery-app/auth-service/internal/config"
 	"github.com/vladopadikk/order-delivery-app/auth-service/internal/models"
-	"github.com/vladopadikk/order-delivery-app/auth-service/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,12 +18,17 @@ var (
 	ErrInvalidPassword = errors.New("invalid password")
 )
 
+type UserRepository interface {
+	Create(ctx context.Context, username, email, passwordHash string, createdAt time.Time) (int64, error)
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
+}
+
 type Service struct {
-	repo *repository.Repository
+	repo UserRepository
 	cfg  *config.Config
 }
 
-func NewService(repo *repository.Repository, cfg *config.Config) *Service {
+func NewService(repo UserRepository, cfg *config.Config) *Service {
 	return &Service{repo, cfg}
 
 }

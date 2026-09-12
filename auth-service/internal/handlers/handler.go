@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -9,11 +10,16 @@ import (
 	"github.com/vladopadikk/order-delivery-app/auth-service/internal/service"
 )
 
-type Handler struct {
-	service *service.Service
+type AuthService interface {
+	Register(ctx context.Context, input models.UserInput) (models.UserResponse, error)
+	Login(ctx context.Context, loginIn models.LoginInput) (models.TokenResponse, error)
 }
 
-func NewHandler(service *service.Service) *Handler {
+type Handler struct {
+	service AuthService
+}
+
+func NewHandler(service AuthService) *Handler {
 	return &Handler{service}
 }
 
@@ -48,11 +54,11 @@ func (h *Handler) LoginHandler(ctx *gin.Context) {
 
 	tokens, err := h.service.Login(ctx.Request.Context(), loginIn)
 	if err != nil {
-		switch err {
-		case service.ErrUserNotFound:
+		switch {
+		case errors.Is(err, service.ErrUserNotFound):
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
-		case service.ErrInvalidPassword:
+		case errors.Is(err, service.ErrInvalidPassword):
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
