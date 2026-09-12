@@ -4,17 +4,28 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/vladopadikk/order-delivery-app/orders-service/internal/kafka/producer"
+	"github.com/vladopadikk/order-delivery-app/orders-service/internal/database"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/models"
-	"github.com/vladopadikk/order-delivery-app/orders-service/internal/repository"
 )
 
-type Service struct {
-	repo     *repository.Repository
-	producer *producer.Producer
+type OrderRepository interface {
+	BeginTx(ctx context.Context) (database.Tx, error)
+	Create(ctx context.Context, exec database.Executor, userID int64, status string, totalPrice float64, deliveryAddress string) (models.Order, error)
+	CreateItems(ctx context.Context, exec database.Executor, order_id int64, orderItem models.OrderItemInput) error
+	GetOrders(ctx context.Context, userID int64) ([]models.OrderResponse, error)
+	UpdateStatus(ctx context.Context, orderID int64, status string) error
 }
 
-func NewService(repo *repository.Repository, producer *producer.Producer) *Service {
+type Producer interface {
+	PublishOrderCreated(ctx context.Context, event models.OrderCreatedEvent) error
+}
+
+type Service struct {
+	repo     OrderRepository
+	producer Producer
+}
+
+func NewService(repo OrderRepository, producer Producer) *Service {
 	return &Service{
 		repo:     repo,
 		producer: producer,
@@ -22,7 +33,7 @@ func NewService(repo *repository.Repository, producer *producer.Producer) *Servi
 }
 
 func (s *Service) CreateOrder(ctx context.Context, userID int64, orderIn models.OrderInput) (models.OrderResponse, error) {
-	tx, err := s.repo.DB.BeginTx(ctx, nil)
+	tx, err := s.repo.BeginTx(ctx)
 	if err != nil {
 		return models.OrderResponse{}, fmt.Errorf("transaction error: %w", err)
 	}
