@@ -278,6 +278,23 @@ docker exec -it kafka kafka-topics --create --if-not-exists --topic delivery_com
 docker compose up -d auth-db orders-db payment-db delivery-db auth-service orders-service payment-service delivery-service notification-service 
 ```
 
+4. Применить миграции (goose)
+
+Каждый сервис хранит свои миграции в `<service>/migrations`. Прогонять нужно по отдельности, каждую — на свою БД:
+
+```bash
+goose -dir auth-service/migrations postgres "host=localhost port=5436 user=postgres password=postgres dbname=auth_db sslmode=disable" up
+goose -dir orders-service/migrations postgres "host=localhost port=5438 user=postgres password=postgres dbname=orders_db sslmode=disable" up
+goose -dir payments-service/migrations postgres "host=localhost port=5437 user=postgres password=postgres dbname=payment_db sslmode=disable" up
+goose -dir delivery-service/migrations postgres "host=localhost port=5435 user=postgres password=postgres dbname=delivery_db sslmode=disable" up
+```
+
+5. Поднять сервисы
+
+```bash
+docker compose up -d auth-service orders-service payment-service delivery-service notification-service
+```
+
 ---
 
 ##  REST API эндпоинты
@@ -407,24 +424,45 @@ Authorization: Bearer <token>
 
 ## ✅ Тестирование
 
-На текущем этапе в проекте реализованы базовые unit-тесты для бизнес-логики `notification-service`.
+В проекте реализованы unit-тесты для бизнес-логики `notification-service`, `auth-service` и `orders-service`. Каждый сервис покрыт по трём слоям: repository, service, handlers.
 
-Тесты покрывают **service-слой** и проверяют, что входящие события корректно преобразуются в пользовательские уведомления.  
-Для изоляции бизнес-логики от внешней инфраструктуры используется mock-реализация `Notifier`.
+### notification-service
+
+Тесты покрывают **service-слой** и проверяют, что входящие события корректно преобразуются в пользовательские уведомления. Для изоляции бизнес-логики от внешней инфраструктуры используется mock-реализация `Notifier`.
 
 Покрытые сценарии:
 - успешная оплата заказа
 - неуспешная оплата заказа
 - успешное завершение доставки
 
-Что проверяется в тестах:
-- вызывается notifier
-- в notifier передаётся корректный `userID`
-- формируется корректный текст уведомления для каждого бизнес-сценария
+### auth-service
 
-Такой подход демонстрирует:
-- использование интерфейсов для внедрения зависимостей
-- разделение бизнес-логики и инфраструктурного слоя
-- умение писать unit-тесты без запуска Kafka, HTTP-обработчиков и базы данных
+| Пакет | Покрытие |
+|---|---|
+| `internal/handlers` | 100.0% |
+| `internal/repository` | 90.9% |
+| `internal/service` | 85.7% |
 
----
+- **repository** — `Create`, `GetByEmail` через `sqlmock`
+- **service** — `Register` (успех, email уже занят, ошибка репозитория), `Login` (успех с проверкой выдачи токенов, пользователь не найден, неверный пароль)
+- **handlers** — `RegisterHandler` и `LoginHandler`: успех, невалидный JSON, доменные ошибки (409/404/401), внутренняя ошибка (500)
+
+### orders-service
+
+| Пакет | Покрытие |
+|---|---|
+| `internal/handlers` | 87.9% |
+| `internal/service` | 75.0% |
+| `internal/repository` | 50.0% |
+
+- **repository** — `Create`, `GetOrders` через `sqlmock`
+- **service** — `CreateOrder`: успех (транзакция создания заказа + позиций + публикация события в Kafka), ошибка `BeginTx`, ошибка `Create`, ошибка `CreateItems` (с проверкой `Rollback`)
+- **handlers** — `CreateOrderHandler`, `GetOrderListHandler`: успех, пользователь не авторизован, невалидный JSON, внутренняя ошибка
+
+Для тестируемости `CreateOrder`, работающего с транзакцией напрямую через `*sql.DB`, в `internal/database` добавлен интерфейс `Tx`, а в `Repository` — метод `BeginTx`, что позволило замокать транзакционный сценарий целиком без реального подключения к БД.
+
+**Не покрыто тестами:** `internal/middleware` (auth-middleware), `internal/config`, `internal/kafka` (consumer/producer), `payments-service`, `delivery-service`.
+
+### Общий подход
+
+Моки для интерфейсов (`UserRepository`, `AuthService`, `OrderRepository`, `Producer`, `database.Tx` и т.д.) генерируются через [`mockery`](https://github.com/vektra/mockery) (testify-шаблон). Тесты организованы в стиле table-driven: каждый сценарий — отдельный кейс в срезе с описанием входных данных, поведения мока и ожидаемого результата.
