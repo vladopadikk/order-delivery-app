@@ -16,6 +16,10 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db}
 }
 
+func (r *Repository) BeginTx(ctx context.Context) (database.Tx, error) {
+	return r.DB.BeginTx(ctx, nil)
+}
+
 func (r *Repository) Create(ctx context.Context, exec database.Executor, userID int64, status string, totalPrice float64, deliveryAddress string) (models.Order, error) {
 	query := `
 		INSERT INTO orders (user_id, status, total_price, delivery_address) 
@@ -81,7 +85,10 @@ func (r *Repository) GetOrders(ctx context.Context, userID int64) ([]models.Orde
 		orders = append(orders, order)
 	}
 
-	return orders, err
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return orders, nil
 }
 
 func (r *Repository) UpdateStatus(ctx context.Context, orderID int64, status string) error {
