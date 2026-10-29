@@ -269,6 +269,69 @@ func (_c *MockOrderRepository_CreateItems_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
+// CreateOutboxMessage provides a mock function for the type MockOrderRepository
+func (_mock *MockOrderRepository) CreateOutboxMessage(ctx context.Context, exec database.Executor, msg models.OutboxMessage) error {
+	ret := _mock.Called(ctx, exec, msg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateOutboxMessage")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, database.Executor, models.OutboxMessage) error); ok {
+		r0 = returnFunc(ctx, exec, msg)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockOrderRepository_CreateOutboxMessage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateOutboxMessage'
+type MockOrderRepository_CreateOutboxMessage_Call struct {
+	*mock.Call
+}
+
+// CreateOutboxMessage is a helper method to define mock.On call
+//   - ctx context.Context
+//   - exec database.Executor
+//   - msg models.OutboxMessage
+func (_e *MockOrderRepository_Expecter) CreateOutboxMessage(ctx any, exec any, msg any) *MockOrderRepository_CreateOutboxMessage_Call {
+	return &MockOrderRepository_CreateOutboxMessage_Call{Call: _e.mock.On("CreateOutboxMessage", ctx, exec, msg)}
+}
+
+func (_c *MockOrderRepository_CreateOutboxMessage_Call) Run(run func(ctx context.Context, exec database.Executor, msg models.OutboxMessage)) *MockOrderRepository_CreateOutboxMessage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 database.Executor
+		if args[1] != nil {
+			arg1 = args[1].(database.Executor)
+		}
+		var arg2 models.OutboxMessage
+		if args[2] != nil {
+			arg2 = args[2].(models.OutboxMessage)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockOrderRepository_CreateOutboxMessage_Call) Return(err error) *MockOrderRepository_CreateOutboxMessage_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockOrderRepository_CreateOutboxMessage_Call) RunAndReturn(run func(ctx context.Context, exec database.Executor, msg models.OutboxMessage) error) *MockOrderRepository_CreateOutboxMessage_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetOrders provides a mock function for the type MockOrderRepository
 func (_mock *MockOrderRepository) GetOrders(ctx context.Context, userID int64) ([]models.OrderResponse, error) {
 	ret := _mock.Called(ctx, userID)

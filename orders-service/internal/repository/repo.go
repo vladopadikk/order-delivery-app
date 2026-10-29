@@ -101,3 +101,66 @@ func (r *Repository) UpdateStatus(ctx context.Context, orderID int64, status str
 	return err
 
 }
+
+func (r *Repository) CreateOutboxMessage(ctx context.Context, exec database.Executor, msg models.OutboxMessage) error {
+	query := `
+		INSERT INTO outbox (event_id, aggregate_id, topic, message_key, payload)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	_, err := exec.ExecContext(ctx, query, msg.EventID, msg.AggregateID, msg.Topic, msg.Key, string(msg.Payload))
+	return err
+}
+
+func (r *Repository) GetUnpublishedOutbox(ctx context.Context, limit int) ([]models.OutboxMessage, error) {
+	query := `
+		SELECT id, event_id::text, aggregate_id, topic, message_key, payload::text, created_at
+		FROM outbox
+		WHERE published_at IS NULL
+		ORDER BY id
+		LIMIT $1
+	`
+
+	rows, err := r.DB.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var messages []models.OutboxMessage
+
+	for rows.Next() {
+		var msg models.OutboxMessage
+		var payload string
+
+		if err := rows.Scan(
+			&msg.ID,
+			&msg.EventID,
+			&msg.AggregateID,
+			&msg.Topic,
+			&msg.Key,
+			&payload,
+			&msg.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		msg.Payload = []byte(payload)
+		messages = append(messages, msg)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return messages, nil
+}
+
+func (r *Repository) MarkOutboxPublished(ctx context.Context, id int64) error {
+	query := `
+		UPDATE outbox
+		SET published_at = NOW()
+		WHERE id = $1
+	`
+	_, err := r.DB.ExecContext(ctx, query, id)
+	return err
+}

@@ -28,7 +28,6 @@ packages:
   github.com/vladopadikk/order-delivery-app/orders-service/internal/service:
     interfaces:
       OrderRepository:
-      Producer:
   github.com/vladopadikk/order-delivery-app/orders-service/internal/database:
     interfaces:
       Executor:

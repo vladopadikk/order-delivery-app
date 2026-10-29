@@ -2,14 +2,12 @@ package producer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/segmentio/kafka-go"
-	"github.com/vladopadikk/order-delivery-app/orders-service/internal/models"
 )
 
+// Producer отправляет готовые сообщения в Kafka. Пользуется им только relay.
 type Producer struct {
 	writer *kafka.Writer
 }
@@ -17,7 +15,6 @@ type Producer struct {
 func NewProducer(broker string) *Producer {
 	writer := kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{broker},
-		Topic:   "order_created",
 	})
 
 	return &Producer{writer}
@@ -27,22 +24,18 @@ func (p *Producer) Close() error {
 	return p.writer.Close()
 }
 
-func (p *Producer) PublishOrderCreated(ctx context.Context, event models.OrderCreatedEvent) error {
-	payload, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("marshal event: %w", err)
-	}
-
-	err = p.writer.WriteMessages(ctx,
+// Publish отправляет сообщение в указанный топик (топик берётся из строки outbox).
+func (p *Producer) Publish(ctx context.Context, topic, key string, payload []byte) error {
+	err := p.writer.WriteMessages(ctx,
 		kafka.Message{
-			Key:   []byte(strconv.FormatInt(event.OrderID, 10)),
+			Topic: topic,
+			Key:   []byte(key),
 			Value: payload,
 		},
 	)
-
 	if err != nil {
 		return fmt.Errorf("write kafka message: %w", err)
 	}
 
-	return err
+	return nil
 }

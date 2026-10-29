@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/database"
 	"github.com/vladopadikk/order-delivery-app/orders-service/internal/models"
@@ -12,23 +15,18 @@ type OrderRepository interface {
 	BeginTx(ctx context.Context) (database.Tx, error)
 	Create(ctx context.Context, exec database.Executor, userID int64, status string, totalPrice float64, deliveryAddress string) (models.Order, error)
 	CreateItems(ctx context.Context, exec database.Executor, order_id int64, orderItem models.OrderItemInput) error
+	CreateOutboxMessage(ctx context.Context, exec database.Executor, msg models.OutboxMessage) error
 	GetOrders(ctx context.Context, userID int64) ([]models.OrderResponse, error)
 	UpdateStatus(ctx context.Context, orderID int64, status string) error
 }
 
-type Producer interface {
-	PublishOrderCreated(ctx context.Context, event models.OrderCreatedEvent) error
-}
-
 type Service struct {
-	repo     OrderRepository
-	producer Producer
+	repo OrderRepository
 }
 
-func NewService(repo OrderRepository, producer Producer) *Service {
+func NewService(repo OrderRepository) *Service {
 	return &Service{
-		repo:     repo,
-		producer: producer,
+		repo: repo,
 	}
 }
 
@@ -61,11 +59,16 @@ func (s *Service) CreateOrder(ctx context.Context, userID int64, orderIn models.
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return models.OrderResponse{}, fmt.Errorf("commit tx: %w", err)
+	// Событие пишется в outbox в той же транзакции, что и заказ.
+	// В Kafka его отправит relay отдельно.
+	eventID, err := models.NewEventID()
+	if err != nil {
+		return models.OrderResponse{}, err
 	}
 
 	event := models.OrderCreatedEvent{
+		EventID:    eventID,
+		OccurredAt: time.Now().UTC(),
 		OrderID:    order.ID,
 		UserID:     userID,
 		TotalPrice: order.TotalPrice,
@@ -73,15 +76,31 @@ func (s *Service) CreateOrder(ctx context.Context, userID int64, orderIn models.
 		Status:     order.Status,
 	}
 
-	if err := s.producer.PublishOrderCreated(ctx, event); err != nil {
-		return models.OrderResponse{}, err
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return models.OrderResponse{}, fmt.Errorf("marshal order created event: %w", err)
+	}
+
+	err = s.repo.CreateOutboxMessage(ctx, tx, models.OutboxMessage{
+		EventID:     eventID,
+		AggregateID: order.ID,
+		Topic:       models.TopicOrderCreated,
+		Key:         strconv.FormatInt(order.ID, 10),
+		Payload:     payload,
+	})
+	if err != nil {
+		return models.OrderResponse{}, fmt.Errorf("create outbox message: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return models.OrderResponse{}, fmt.Errorf("commit tx: %w", err)
 	}
 
 	return models.OrderResponse{
 		OrderID:    order.ID,
 		TotalPrice: order.TotalPrice,
 		Status:     order.Status,
-	}, err
+	}, nil
 }
 
 func (s *Service) UpdateOrderStatus(ctx context.Context, orderID int64, status string) error {

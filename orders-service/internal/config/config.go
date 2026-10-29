@@ -2,6 +2,8 @@ package config
 
 import (
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -19,6 +21,9 @@ type Config struct {
 	DBName     string
 
 	JWTSecret string
+
+	OutboxPollInterval time.Duration
+	OutboxBatchSize    int
 }
 
 func Load() *Config {
@@ -37,6 +42,9 @@ func Load() *Config {
 		DBName:     getEnv("DB_NAME", "postgres"),
 
 		JWTSecret: getEnv("JWT_SECRET", "dev_secret"),
+
+		OutboxPollInterval: time.Duration(getEnvInt("OUTBOX_POLL_INTERVAL_MS", 500)) * time.Millisecond,
+		OutboxBatchSize:    getEnvInt("OUTBOX_BATCH_SIZE", 50),
 	}
 
 	return cfg
@@ -47,4 +55,18 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		return defaultValue
+	}
+
+	n, err := strconv.Atoi(value)
+	if err != nil || n <= 0 {
+		return defaultValue
+	}
+
+	return n
 }
