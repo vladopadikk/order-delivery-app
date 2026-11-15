@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -148,6 +149,256 @@ func TestGetOrders(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tC.expectedOrders, got)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestRepoCreateOutboxMessage(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer db.Close()
+
+	r := NewRepository(db)
+
+	type mockBehavior func(msg models.OutboxMessage)
+
+	testCases := []struct {
+		name         string
+		msg          models.OutboxMessage
+		wantErr      bool
+		mockBehavior mockBehavior
+	}{
+		{
+			name: "OK",
+			msg: models.OutboxMessage{
+				EventID:     "7f1c2d3e-0000-4000-8000-000000000001",
+				AggregateID: 52,
+				Topic:       models.TopicOrderCreated,
+				Key:         "52",
+				Payload:     []byte(`{"order_id":52}`),
+			},
+			mockBehavior: func(msg models.OutboxMessage) {
+				mock.ExpectExec("INSERT INTO outbox").
+					WithArgs(
+						msg.EventID,
+						msg.AggregateID,
+						msg.Topic,
+						msg.Key,
+						string(msg.Payload),
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+		},
+		{
+			name: "Insert error",
+			msg: models.OutboxMessage{
+				EventID:     "7f1c2d3e-0000-4000-8000-000000000002",
+				AggregateID: 53,
+				Topic:       models.TopicOrderCreated,
+				Key:         "53",
+				Payload:     []byte(`{"order_id":53}`),
+			},
+			wantErr: true,
+			mockBehavior: func(msg models.OutboxMessage) {
+				mock.ExpectExec("INSERT INTO outbox").
+					WithArgs(
+						msg.EventID,
+						msg.AggregateID,
+						msg.Topic,
+						msg.Key,
+						string(msg.Payload),
+					).
+					WillReturnError(errors.New("insert failed"))
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.name, func(t *testing.T) {
+			tC.mockBehavior(tC.msg)
+
+			err := r.CreateOutboxMessage(context.Background(), db, tC.msg)
+
+			if tC.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestGetUnpublishedOutbox(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer db.Close()
+
+	r := NewRepository(db)
+
+	type mockBehavior func(limit int, messages []models.OutboxMessage)
+
+	createdAt := time.Date(2026, 10, 29, 12, 0, 0, 0, time.UTC)
+
+	testCases := []struct {
+		name             string
+		limit            int
+		wantErr          bool
+		mockBehavior     mockBehavior
+		expectedMessages []models.OutboxMessage
+	}{
+		{
+			name:  "OK",
+			limit: 10,
+			mockBehavior: func(limit int, messages []models.OutboxMessage) {
+				rows := sqlmock.NewRows([]string{
+					"id",
+					"event_id",
+					"aggregate_id",
+					"topic",
+					"message_key",
+					"payload",
+					"created_at",
+				})
+				for _, m := range messages {
+					rows.AddRow(
+						m.ID,
+						m.EventID,
+						m.AggregateID,
+						m.Topic,
+						m.Key,
+						string(m.Payload),
+						m.CreatedAt,
+					)
+				}
+
+				mock.ExpectQuery("FROM outbox").
+					WithArgs(limit).
+					WillReturnRows(rows)
+			},
+			expectedMessages: []models.OutboxMessage{
+				{
+					ID:          1,
+					EventID:     "7f1c2d3e-0000-4000-8000-000000000001",
+					AggregateID: 52,
+					Topic:       models.TopicOrderCreated,
+					Key:         "52",
+					Payload:     []byte(`{"order_id":52}`),
+					CreatedAt:   createdAt,
+				},
+				{
+					ID:          2,
+					EventID:     "7f1c2d3e-0000-4000-8000-000000000002",
+					AggregateID: 53,
+					Topic:       models.TopicOrderCreated,
+					Key:         "53",
+					Payload:     []byte(`{"order_id":53}`),
+					CreatedAt:   createdAt,
+				},
+			},
+		},
+		{
+			name:  "No unpublished events",
+			limit: 10,
+			mockBehavior: func(limit int, messages []models.OutboxMessage) {
+				rows := sqlmock.NewRows([]string{
+					"id",
+					"event_id",
+					"aggregate_id",
+					"topic",
+					"message_key",
+					"payload",
+					"created_at",
+				})
+
+				mock.ExpectQuery("FROM outbox").
+					WithArgs(limit).
+					WillReturnRows(rows)
+			},
+		},
+		{
+			name:    "Query error",
+			limit:   10,
+			wantErr: true,
+			mockBehavior: func(limit int, messages []models.OutboxMessage) {
+				mock.ExpectQuery("FROM outbox").
+					WithArgs(limit).
+					WillReturnError(errors.New("db down"))
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.name, func(t *testing.T) {
+			tC.mockBehavior(tC.limit, tC.expectedMessages)
+
+			got, err := r.GetUnpublishedOutbox(context.Background(), tC.limit)
+
+			if tC.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tC.expectedMessages, got)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestMarkOutboxPublished(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer db.Close()
+
+	r := NewRepository(db)
+
+	type mockBehavior func(id int64)
+
+	testCases := []struct {
+		name         string
+		id           int64
+		wantErr      bool
+		mockBehavior mockBehavior
+	}{
+		{
+			name: "OK",
+			id:   1,
+			mockBehavior: func(id int64) {
+				mock.ExpectExec("UPDATE outbox").
+					WithArgs(id).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+			},
+		},
+		{
+			name:    "Update error",
+			id:      2,
+			wantErr: true,
+			mockBehavior: func(id int64) {
+				mock.ExpectExec("UPDATE outbox").
+					WithArgs(id).
+					WillReturnError(errors.New("db down"))
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.name, func(t *testing.T) {
+			tC.mockBehavior(tC.id)
+
+			err := r.MarkOutboxPublished(context.Background(), tC.id)
+
+			if tC.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
